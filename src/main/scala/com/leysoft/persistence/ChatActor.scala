@@ -7,7 +7,7 @@ import akka.persistence.{PersistentActor, SaveSnapshotFailure, SaveSnapshotSucce
 
 import scala.collection.mutable.Queue
 
-class LocalChatActor(val from: String, val to: String) extends PersistentActor with ActorLogging {
+class ChatActor(val from: String, val to: String) extends PersistentActor with ActorLogging {
 
   var id: Long = 0L
 
@@ -16,7 +16,7 @@ class LocalChatActor(val from: String, val to: String) extends PersistentActor w
   val lastMessages = new Queue[(String, String)]()
 
   val f: (String, String) => Unit = (owner, message) => {
-    if(lastMessages.size >= LocalChatActor.MAX_MESSAGE_IN_QUEUE)
+    if(lastMessages.size >= ChatActor.MAX_MESSAGE_IN_QUEUE)
       lastMessages.dequeue()
     lastMessages.enqueue(Tuple2[String, String](owner, message))
     id += 1
@@ -24,7 +24,7 @@ class LocalChatActor(val from: String, val to: String) extends PersistentActor w
 
   val snapshot: () => Unit = () => {
     countMessages += 1
-    if(countMessages >= LocalChatActor.MAX_MESSAGE_IN_QUEUE) {
+    if(countMessages >= ChatActor.MAX_MESSAGE_IN_QUEUE) {
       log.info("Saving snapshop...")
       saveSnapshot(lastMessages)
       countMessages = 0
@@ -68,13 +68,13 @@ class LocalChatActor(val from: String, val to: String) extends PersistentActor w
   }
 }
 
-object LocalChatActor {
+object ChatActor {
 
   val MAX_MESSAGE_IN_QUEUE = 10
 
-  def apply(from: String, to: String): LocalChatActor = new LocalChatActor(from, to)
+  def apply(from: String, to: String): ChatActor = new ChatActor(from, to)
 
-  def props(from: String, to: String) = Props(LocalChatActor(from, to))
+  def props(from: String, to: String) = Props(ChatActor(from, to))
 }
 
 case class Message(content: String, date: Date, sent: Boolean = false)

@@ -5,7 +5,7 @@ import akka.persistence.PersistentActor
 
 import scala.collection.mutable.{HashMap, HashSet}
 
-class LocalVotesActor extends PersistentActor with ActorLogging {
+class VotesActor extends PersistentActor with ActorLogging {
 
   val persons = HashSet[Person]()
 
@@ -36,9 +36,9 @@ class LocalVotesActor extends PersistentActor with ActorLogging {
 
 object LocalVotesActor {
 
-  def apply: LocalVotesActor = new LocalVotesActor()
+  def apply: VotesActor = new VotesActor()
 
-  def props: Props = Props[LocalVotesActor]
+  def props: Props = Props[VotesActor]
 }
 
 sealed case class Person(id: String, name: String)

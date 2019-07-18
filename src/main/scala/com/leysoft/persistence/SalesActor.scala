@@ -3,9 +3,12 @@ package com.leysoft.persistence
 import java.util.Date
 
 import akka.actor.{ActorLogging, ActorRef, Props}
+import akka.persistence.journal.{EventAdapter, EventSeq, ReadEventAdapter}
 import akka.persistence.{PersistentActor, RecoveryCompleted}
+import DomainModel._
+import DataModel._
 
-class LocalSalesActor(val id: String, val actor: ActorRef) extends PersistentActor with ActorLogging {
+class SalesActor(val id: String, val actor: ActorRef) extends PersistentActor with ActorLogging {
 
   var count: Long = 0L
 
@@ -52,7 +55,8 @@ class LocalSalesActor(val id: String, val actor: ActorRef) extends PersistentAct
   }
 
   /**
-    * Método llamado si persist() (enviando el evento) falla. Detendra (STOP) al actor,
+    * Método llamado si persist() (enviando el evento) falla o el jornal no esté disponible.
+    * Detendra (STOP) al actor,
     * por lo que se recomeinda iniciar al actor dentro de un tiempo.
     */
   override def onPersistFailure(cause: Throwable, event: Any, seqNr: Long): Unit = {
@@ -70,21 +74,66 @@ class LocalSalesActor(val id: String, val actor: ActorRef) extends PersistentAct
   }
 
   /**
-    * Método llamado si ocurre un fallo en receiveRecover(), Detendra (STOP) al actor.
+    * Método llamado si ocurre un fallo en receiveRecover() o el jornal no esté disponible.
+    * Detendra (STOP) al actor.
     */
   override def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit = {
     super.onRecoveryFailure(cause, event)
   }
 }
 
-object LocalSalesActor {
+object SalesActor {
 
-  def apply(id: String, actor: ActorRef): LocalSalesActor =
-    new LocalSalesActor(id, actor)
+  def apply(id: String, actor: ActorRef): SalesActor =
+    new SalesActor(id, actor)
 
-  def props(id: String, actor: ActorRef) = Props(LocalSalesActor(id, actor))
+  def props(id: String, actor: ActorRef) = Props(SalesActor(id, actor))
 }
 
-case class Product(name: String, amount: Long, date: Date)
+object DomainModel {
 
-case class Sale(id: Long, product: Product)
+  case class Product(name: String, amount: Long, date: Date)
+
+  case class Sale(id: Long, product: Product)
+
+  case class SaleOffer(id: Long, product: Product, offer: Double)
+}
+
+object DataModel {
+
+  case class SaleData(id: Long, name: String, amount: Long, date: Date)
+
+  case class SaleOfferData(id: Long, name: String, amount: Long, date: Date, offer: Double)
+}
+
+class SaleReadEventAdapter extends ReadEventAdapter {
+
+  //journal->serializer->readEventAdapter->actor
+  override def fromJournal(event: Any, manifest: String): EventSeq = event match {
+    case sale: SaleData => EventSeq.single(SaleOfferData(sale.id,
+      sale.name, sale.amount, sale.date, 0D))
+    case offer: SaleOfferData => EventSeq.single(offer)
+    case _ => throw new IllegalArgumentException
+  }
+}
+
+class SaleEventAdapter extends EventAdapter {
+
+  override def manifest(event: Any): String = "SMF"
+
+  // journal->serializer->fromJournal->actor
+  override def fromJournal(event: Any, manifest: String): EventSeq = event match {
+    case SaleData(id, name, amount, date) =>
+      EventSeq.single(Sale(id, Product(name, amount, date)))
+    case SaleOfferData(id, name, amount, date, offer) =>
+      EventSeq.single(SaleOffer(id, Product(name, amount, date), offer))
+  }
+
+  // actor->toJournal->serializer->journal
+  override def toJournal(event: Any): Any = event match {
+    case Sale(id, product) =>
+      SaleData(id, product.name, product.amount, product.date)
+    case SaleOffer(id, product, offer) =>
+      SaleOfferData(id, product.name, product.amount, product.date, offer)
+  }
+}

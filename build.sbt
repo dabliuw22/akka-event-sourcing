@@ -15,6 +15,8 @@ val postgresqlVersion = "42.2.2"
 val akkaJdbcParent = "com.github.dnvriend"
 val akkaJdbcVersion = "3.5.2"
 val cassandraVersion = "0.98"
+val redisParent = "com.hootsuite"
+val redisVersion = "0.9.0"
 val protobufParent = "com.google.protobuf"
 val protobufVersion = "3.6.1"
 
@@ -29,6 +31,9 @@ libraryDependencies ++= Seq(
   
   akkaParent %% "akka-persistence-cassandra" % cassandraVersion,
   akkaParent %% "akka-persistence-cassandra-launcher" % cassandraVersion % Test,
+
+  // for scala 2.12.0
+  //redisParent %% "akka-persistence-redis" % redisVersion,
   
   protobufParent % "protobuf-java"  % protobufVersion,
 )
