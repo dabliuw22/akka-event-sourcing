@@ -1,4 +1,4 @@
-package com.leysoft.local
+package com.leysoft.persistence
 
 import akka.actor.{Actor, ActorLogging, Props}
 

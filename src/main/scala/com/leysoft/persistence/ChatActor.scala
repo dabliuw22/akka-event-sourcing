@@ -1,4 +1,4 @@
-package com.leysoft.local
+package com.leysoft.persistence
 
 import java.util.Date
 

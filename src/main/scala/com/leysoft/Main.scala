@@ -1,13 +1,17 @@
 package com.leysoft
 
 import akka.actor.ActorSystem
-import com.leysoft.local._
+import com.leysoft.persistence._
 import java.util.Date
+
+import com.typesafe.config.ConfigFactory
 
 import scala.util.Random
 
 object Main extends App {
-  val system = ActorSystem("event-sourcing-system")
+  //val config = ConfigFactory.load().getConfig("local")
+  val config = ConfigFactory.load().getConfig("postgresql")
+  val system = ActorSystem("event-sourcing-system", config)
 
   /*val salesActor = system.actorOf(LocalSalesActor
     .props("sales-id", system.actorOf(SimpleActor.props, "simple-actor")),

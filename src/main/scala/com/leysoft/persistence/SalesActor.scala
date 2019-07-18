@@ -1,9 +1,9 @@
-package com.leysoft.local
+package com.leysoft.persistence
 
 import java.util.Date
 
 import akka.actor.{ActorLogging, ActorRef, Props}
-import akka.persistence.PersistentActor
+import akka.persistence.{PersistentActor, RecoveryCompleted}
 
 class LocalSalesActor(val id: String, val actor: ActorRef) extends PersistentActor with ActorLogging {
 
@@ -44,8 +44,11 @@ class LocalSalesActor(val id: String, val actor: ActorRef) extends PersistentAct
     * o reinicio del actor y se realiza la actualización del estado del actor.
     */
   override def receiveRecover: Receive = {
-    case sale: Sale => f(sale)
+    case sale: Sale =>
+      count += sale.id
+      total += sale.product.amount
       log.info(s"Recover: $sale, count: $count, total: $total")
+    case RecoveryCompleted => count += 1
   }
 
   /**
@@ -64,6 +67,13 @@ class LocalSalesActor(val id: String, val actor: ActorRef) extends PersistentAct
   override def onPersistRejected(cause: Throwable, event: Any, seqNr: Long): Unit = {
     log.error(s"Persist rejected for event: $event because $cause")
     super.onPersistRejected(cause, event, seqNr)
+  }
+
+  /**
+    * Método llamado si ocurre un fallo en receiveRecover(), Detendra (STOP) al actor.
+    */
+  override def onRecoveryFailure(cause: Throwable, event: Option[Any]): Unit = {
+    super.onRecoveryFailure(cause, event)
   }
 }
 
